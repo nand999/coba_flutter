@@ -1,18 +1,24 @@
 import 'package:coba_tampilan/ApiService.dart';
 import 'package:coba_tampilan/BerandaPage.dart';
+import 'package:coba_tampilan/BerandaPageBaru.dart';
 import 'package:coba_tampilan/RegisterPage.dart';
+import 'package:coba_tampilan/user_model.dart';
+import 'package:coba_tampilan/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:provider/provider.dart';
 
 class LoginPage extends StatelessWidget {
 
-  final ApiService apiService = ApiService('http://192.168.1.16:8080/coba/mobile');
+  // final ApiService apiService = ApiService('http://172.17.202.2:8080/coba/mobile');
+  final ApiService apiService = ApiService();
 
 TextEditingController usernameController = TextEditingController();
 TextEditingController passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
+    
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -22,24 +28,19 @@ TextEditingController passwordController = TextEditingController();
               Container(
                 height: 300,
                 decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage('assets/bg.png'), // Sesuaikan path dengan benar
-                    fit: BoxFit.fill,
-                  ),
+                  // image: DecorationImage(
+                  //   image: AssetImage('assets/bg.png'), // Sesuaikan path dengan benar
+                  //   fit: BoxFit.fill,
+                  // ),
                 ),
                 child: Stack(
                   children: <Widget>[
-                    Positioned(
-                      left: 30,
-                      width: 80,
-                      height: 200,
-                      child: FadeInUp(
-                        duration: Duration(seconds: 1),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            image: DecorationImage(
-                              image: AssetImage('assets/bg1.png'), // Sesuaikan path dengan benar
-                            ),
+                    FadeInUp(
+                      duration: Duration(seconds: 1),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('assets/bg.png'), // Sesuaikan path dengan benar
                           ),
                         ),
                       ),
@@ -248,10 +249,23 @@ void _login(BuildContext context) async {
     if (response['status'] == 'success') {
       print('Login successful');
       // Tambahkan logika navigasi atau tindakan setelah login berhasil
+
+
+            // Set the user data using the provider
+      context.read<UserProvider>().setUser(
+        UserModel(
+          id:  response['id'],
+          nama: response['username'], // replace with the actual field name
+          nomor: response['nomor'],
+          foto_profil: response['foto_profil'] // replace with the actual field name
+        ),
+      );
+
+
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => BerandaPage(),
+          builder: (context) => BerandaPageBaru(),
         ),
       );
     } else {

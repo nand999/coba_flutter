@@ -1,34 +1,186 @@
 import 'dart:io';
-
+import 'package:coba_tampilan/ApiService.dart';
+import 'package:coba_tampilan/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'user_provider.dart';
+import 'package:uuid/uuid.dart';
 
 class ProfilPageBaru extends StatefulWidget {
-  const ProfilPageBaru({super.key});
+  const ProfilPageBaru({Key? key}) : super(key: key);
 
   @override
   State<ProfilPageBaru> createState() => _ProfilPageBaruState();
 }
 
 class _ProfilPageBaruState extends State<ProfilPageBaru> {
+  ApiService apiService = ApiService();
   File? image;
 
- Future getImage() async {
-  final ImagePicker _picker = ImagePicker();
-  final XFile? imagepicked = await _picker.pickImage(source: ImageSource.gallery);
+  Future getImage() async {
+    final ImagePicker _picker = ImagePicker();
+    final XFile? imagepicked =
+        await _picker.pickImage(source: ImageSource.gallery);
 
-  // Periksa apakah pengguna memilih foto atau membatalkan
-  if (imagepicked != null) {
-    image = File(imagepicked.path);
-    setState(() {});
-  } else {
-    // Pengguna membatalkan pemilihan, tidak ada perubahan yang perlu di-handle
+    // Periksa apakah pengguna memilih foto atau membatalkan
+    if (imagepicked != null) {
+      image = File(imagepicked.path);
+      setState(() {});
+    } else {
+      // Pengguna membatalkan pemilihan, tidak ada perubahan yang perlu di-handle
+    }
   }
-}
 
+  Future<void> _changePhoto() async {
+    await getImage();
+    if (image != null) {
+      try {
+        await updateFotoProfil(image!);
+        setState(() {
+          // Tambahkan logika pembaruan data user setelah foto profil berhasil diperbarui
+          UserModel? updatedUser = context.read<UserProvider>().user;
+          if (updatedUser != null) {
+            context.read<UserProvider>().setUser(updatedUser);
+          }
+        });
+      } catch (e) {
+        // Tampilkan pesan kesalahan jika gagal mengupdate foto profil
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Error'),
+              content: Text('Failed to update foto profil.'),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text('Close'),
+                ),
+              ],
+            );
+          },
+        );
+      }
+    }
+  }
+
+  //lama
+
+  // Future<void> _changePhoto() async {
+  //   await getImage();
+  //   if (image != null) {
+  //     try {
+  //       await updateFotoProfil(image!);
+  //       setState(() {
+
+  //       });
+  //     } catch (e) {
+  //       // Tampilkan pesan kesalahan jika gagal mengupdate foto profil
+  //       showDialog(
+  //         context: context,
+  //         builder: (BuildContext context) {
+  //           return AlertDialog(
+  //             title: Text('Error'),
+  //             content: Text('Failed to update foto profil.'),
+  //             actions: <Widget>[
+  //               TextButton(
+  //                 onPressed: () {
+  //                   Navigator.of(context).pop();
+  //                 },
+  //                 child: Text('Close'),
+  //               ),
+  //             ],
+  //           );
+  //         },
+  //       );
+  //     }
+  //   }
+  // }
+
+  Future<void> updateFotoProfil(File image) async {
+    UserModel? user = context.read<UserProvider>().user;
+    if (user != null) {
+      try {
+        bool uploadSuccess = await uploadImage(image);
+
+        if (uploadSuccess) {
+          await apiService.updateFotoProfil(
+              user.id!, image); // Perubahan di sini
+          print('Update foto_profil success ' + user.id.toString());
+          setState(() {
+            UserModel? updatedUser = context.read<UserProvider>().user;
+            if (updatedUser != null) {
+              context.read<UserProvider>().setUser(updatedUser);
+            }
+          });
+          // Lakukan tindakan tambahan jika diperlukan setelah berhasil memperbarui foto profil
+        } else {
+          print('Failed to update foto_profil');
+        }
+      } catch (e) {
+        print('Error updating foto_profil: $e');
+      }
+    }
+  }
+
+  //    lama 2
+  // Future<void> updateFotoProfil(File image) async {
+  //   UserModel? user = context.read<UserProvider>().user;
+  //   if (user != null) {
+  //     try {
+  //       bool uploadSuccess = await uploadImage(image);
+
+  //       if (uploadSuccess) {
+  //         print('Update foto_profil success '+ user.id.toString());
+  //         // Lakukan tindakan tambahan jika diperlukan setelah berhasil memperbarui foto profil
+  //       } else {
+  //         print('Failed to update foto_profil');
+  //       }
+  //     } catch (e) {
+  //       print('Error updating foto_profil: $e');
+  //     }
+  //   }
+  // }
+
+  Future<bool> uploadImage(File image) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse(apiService.baseUrl + '/upload.php'),
+      );
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          image.path,
+          filename:
+              Uuid().v4() + ".jpg", // Generate a random filename using uuid
+        ),
+      );
+
+      var response = await request.send();
+
+      if (response.statusCode == 200) {
+        // Gambar berhasil diunggah. Sekarang perbarui foto_profil di tabel pengguna.
+        return true;
+      } else {
+        print('Failed to upload image. Server error: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('Error uploading image: $e');
+      return false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    UserModel? user = context.watch<UserProvider>().user;
+
     return Scaffold(
       body: Center(
         child: Column(
@@ -43,10 +195,28 @@ class _ProfilPageBaruState extends State<ProfilPageBaru> {
                       decoration: BoxDecoration(
                           // Ganti nilai sesuai keinginan Anda
                           ),
-                      child: image != null
-                          ? Image.file(image!, fit: BoxFit.cover, width: 200, height: 200,)
-                          : Image.asset("assets/gb.jpg",
-                              width: 200, height: 200, fit: BoxFit.cover),
+                      child: user != null && user.foto_profil != null
+                          ? Image.network(
+                              apiService.fotoProfilUrl + user.foto_profil!,
+                              width: 200,
+                              height: 200,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                print('Error loading image: $error');
+                                return Image.asset(
+                                  'assets/nullPP.jpg',
+                                  width: 200,
+                                  height: 200,
+                                  fit: BoxFit.contain,
+                                );
+                              },
+                            )
+                          : Image.asset(
+                              'assets/nullPP.jpg',
+                              width: 200,
+                              height: 200,
+                              fit: BoxFit.cover,
+                            ),
                     ),
                   ),
                   Positioned(
@@ -60,7 +230,7 @@ class _ProfilPageBaruState extends State<ProfilPageBaru> {
                       child: IconButton(
                         icon: Icon(Icons.edit, color: Colors.white),
                         onPressed: () async {
-                          await getImage();
+                          await _changePhoto();
                         },
                       ),
                     ),
@@ -71,34 +241,13 @@ class _ProfilPageBaruState extends State<ProfilPageBaru> {
             SizedBox(height: 20),
             // Informasi Profil
             UserInfoCard(
-              name: 'John Doe',
-              email: 'johndoe@example.com',
-              address: 'Jl. Contoh No. 123',
+              name: user!.nama,
+              email: user!.nomor,
+              address: user.id.toString(),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  void _changePhoto(BuildContext context) {
-    // Implement logic to change the profile photo
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Ganti Foto Profil'),
-          content: Text('Implement logic to change the profile photo here.'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Tutup'),
-            ),
-          ],
-        );
-      },
     );
   }
 }
@@ -108,12 +257,12 @@ class UserInfoCard extends StatelessWidget {
   final String email;
   final String address;
 
-  const UserInfoCard(
-      {Key? key,
-      required this.name,
-      required this.email,
-      required this.address})
-      : super(key: key);
+  const UserInfoCard({
+    Key? key,
+    required this.name,
+    required this.email,
+    required this.address,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

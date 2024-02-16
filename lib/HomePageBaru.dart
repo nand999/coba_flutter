@@ -1,19 +1,16 @@
-import 'package:coba_tampilan/DetailProduk.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'user_model.dart';
 import 'user_provider.dart';
 import 'ApiService.dart';
 
-class HomePage extends StatefulWidget {
+class HomePageBaru extends StatefulWidget {
   @override
-  _HomePageState createState() => _HomePageState();
+  _HomePageBaruState createState() => _HomePageBaruState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageBaruState extends State<HomePageBaru> {
   List<Map<String, dynamic>> products = [];
-  ApiService apiService = ApiService();
-  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
 
   @override
   void initState() {
@@ -24,7 +21,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> fetchData() async {
     try {
       ApiService apiService = ApiService();
-      List<Map<String, dynamic>> productList = await apiService.getProductNewest();
+      List<Map<String, dynamic>> productList = await apiService.getProducts();
 
       setState(() {
         products = productList;
@@ -35,19 +32,12 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _refresh() async {
-    await fetchData();
-  }
-
   @override
   Widget build(BuildContext context) {
     UserModel? user = context.watch<UserProvider>().user;
 
     return Scaffold(
-      body: RefreshIndicator(
-        key: _refreshIndicatorKey,
-        onRefresh: _refresh,
-        child: Builder(
+      body: Builder(
         builder: (BuildContext context) {
           return CustomScrollView(
             slivers: [
@@ -76,9 +66,8 @@ class _HomePageState extends State<HomePage> {
                     elevation: 0,
                     child: Center(
                       child: Text(
-                        "Selamat Datang" + " " + user!.nama.toString(),
-                        style: TextStyle(
-                            fontSize: 40, fontWeight: FontWeight.bold, ),
+                        "Selamat Datang",
+                        style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -87,26 +76,24 @@ class _HomePageState extends State<HomePage> {
               SliverPersistentHeader(
                 pinned: true,
                 delegate: _SliverHeaderDelegate(
-                  minHeight: 150,
-                  maxHeight: 150,
+                  minHeight: 130,
+                  maxHeight: 130,
                   child: Container(
                     color: Colors.white,
                     child: Center(
                       child: Padding(
-                        padding: const EdgeInsets.only(top: 30),
+                        padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
                         child: Card(
                           elevation: 8.0,
                           child: Column(
                             children: [
                               ListTile(
                                 title: Text(user?.nama ?? 'Nama Anda'),
-                                subtitle:
-                                    Text(user?.nomor ?? 'Detail Akun Anda'),
+                                subtitle: Text(user?.nomor??'Detail Akun Anda'),
                                 leading: Icon(Icons.star),
                               ),
                               Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 children: [
                                   Icon(Icons.abc),
                                   Icon(Icons.adb),
@@ -127,33 +114,15 @@ class _HomePageState extends State<HomePage> {
                   (BuildContext context, int index) {
                     Map<String, dynamic> product = products[index];
 
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DetailProduk(
-                                idProduk: int.parse(product['id_produk'])),
-                          ),
-                        );
-                      },
-                      child: Card(
-                        elevation: 1,
-                        margin: EdgeInsets.symmetric(
-                            vertical: 5.0, horizontal: 16.0),
-                        child: ListTile(
-                          leading: Image.network(
-                            apiService.imgUrl +
-                                product[
-                                    'foto'], // Sesuaikan dengan nama field yang sesuai
-                            width: 80.0,
-                            height: 80.0,
-                            fit: BoxFit.cover,
-                          ),
-                          title: Text(product['nama']),
-                          subtitle: Text(product['harga']),
-                        ),
+                    return ListTile(
+                      leading: Image.network(
+                        'http://your_base_url/' + product['foto'], // Adjust the field name accordingly
+                        width: 80.0,
+                        height: 80.0,
+                        fit: BoxFit.cover,
                       ),
+                      title: Text(product['nama']),
+                      subtitle: Text(product['deskripsi']),
                     );
                   },
                   childCount: products.length,
@@ -163,7 +132,6 @@ class _HomePageState extends State<HomePage> {
           );
         },
       ),
-    )
     );
   }
 }

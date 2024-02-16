@@ -1,5 +1,6 @@
 import 'package:coba_tampilan/HomePage.dart';
 import 'package:coba_tampilan/ProdukPage.dart';
+import 'package:coba_tampilan/ProdukPageBaru.dart';
 import 'package:coba_tampilan/ProfilPageBaru.dart';
 import 'package:coba_tampilan/SettingPage.dart';
 import 'package:flutter/material.dart';
@@ -36,7 +37,7 @@ class BerandaPage extends StatelessWidget {
             ),
             body: TabBarView(children: <Widget> [
               HomePage(),
-              ProdukPage(),
+              ProdukPageBaru(),
               ProfilPageBaru(),
               SettingPage()
             ]),

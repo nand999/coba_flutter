@@ -13,7 +13,8 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   // final ApiService apiService = ApiService('http://localhost/path/to'); 
-  final ApiService apiService = ApiService('http://192.168.1.16:8080/coba/mobile'); // Sesuaikan dengan URL backend
+  // final ApiService apiService = ApiService('http://192.168.1.16:8080/coba/mobile'); // Sesuaikan dengan URL backend
+  final ApiService apiService = ApiService();
 
   TextEditingController usernameController = TextEditingController();
   TextEditingController phoneController = TextEditingController();
